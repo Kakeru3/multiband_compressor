@@ -8,29 +8,24 @@ mod editor;
 /// The time it takes for the peak meter to decay by 12 dB after switching to complete silence.
 const PEAK_METER_DECAY_MS: f64 = 150.0;
 
-/// This is mostly identical to the gain example, minus some fluff, and with a GUI.
+// DSPエンジン用の構造体
 struct SimpleCompressor {
+    // GUIやホストと共有するパラーメーター
     params: Arc<SimpleCompressorParams>,
 
-    /// Needed to normalize the peak meter's response based on the sample rate.
+    /// ピークメーターが減衰する速さ
     peak_meter_decay_weight: f32,
-    /// The current data for the peak meter. This is stored as an [`Arc`] so we can share it between
-    /// the GUI and the audio processing parts. If you have more state to share, then it's a good
-    /// idea to put all of that in a struct behind a single `Arc`.
-    ///
-    /// This is stored as voltage gain.
-    peak_meter: Arc<AtomicF32>,
+    // GUIに表示するためのピークメーターの値
 
-    /// Envelope follower state
+    peak_meter: Arc<AtomicF32>,
+    /// 入力信号のレベルを追従する値
     envelope: f32,
-    /// Current gain reduction in dB
+    /// 現在のゲインリダクション
     gain_reduction_db: f32,
 }
 
 #[derive(Params)]
 struct SimpleCompressorParams {
-    /// The editor state, saved together with the parameter state so the custom scaling can be
-    /// restored.
     #[persist = "editor-state"]
     editor_state: Arc<IcedState>,
 
@@ -127,9 +122,9 @@ impl Default for SimpleCompressorParams {
 
 impl Plugin for SimpleCompressor {
     const NAME: &'static str = "SimpleCompressor GUI (iced)";
-    const VENDOR: &'static str = "Moist Plugins GmbH";
-    const URL: &'static str = "https://youtu.be/dQw4w9WgXcQ";
-    const EMAIL: &'static str = "info@example.com";
+    const VENDOR: &'static str = "Kakeru3";
+    const URL: &'static str = "";
+    const EMAIL: &'static str = "";
 
     const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
@@ -169,8 +164,7 @@ impl Plugin for SimpleCompressor {
         buffer_config: &BufferConfig,
         _context: &mut impl InitContext<Self>,
     ) -> bool {
-        // After `PEAK_METER_DECAY_MS` milliseconds of pure silence, the peak meter's value should
-        // have dropped by 12 dB
+        // ピークメーターの減衰スピードを、サンプルレートに合わせて設定
         self.peak_meter_decay_weight = 0.25f64
             .powf((buffer_config.sample_rate as f64 * PEAK_METER_DECAY_MS / 1000.0).recip())
             as f32;
@@ -184,59 +178,62 @@ impl Plugin for SimpleCompressor {
         _aux: &mut AuxiliaryBuffers,
         context: &mut impl ProcessContext<Self>,
     ) -> ProcessStatus {
-        // Read smoothed parameter values
+        // guiからパラメーターを取得
         let threshold_db = self.params.threshold.smoothed.next();
         let ratio = self.params.ratio.smoothed.next().max(1.0);
         let attack_time = (self.params.attack.smoothed.next() / 1000.0).max(0.0001); // seconds
         let release_time = (self.params.release.smoothed.next() / 1000.0).max(0.0001); // seconds
         let makeup_db = self.params.makeup.smoothed.next();
 
-        // sample rate (as f32)
+        // f32のサンプルレート
         let sample_rate = context.transport().sample_rate as f32;
 
         for channel_samples in buffer.iter_samples() {
             let mut amplitude = 0.0_f32;
             let num_samples = channel_samples.len() as f32;
 
-            // Per-sample processing with dB-domain smoothing to avoid distortion
+            // スムージング係数の計算(歪まないようにアタックとリリースの計算をしているところ)
             let attack_coef_per_sample = (-1.0_f32 / (attack_time * sample_rate)).exp();
             let release_coef_per_sample = (-1.0_f32 / (release_time * sample_rate)).exp();
 
+            // 1サンプルずつのループ
             for sample in channel_samples {
+                // 絶対値を代入しているので、波形の正負ではなく、振幅のみを扱っている
                 let input = sample.abs();
 
-                // Convert to dB
+                // 入力レベルを、dbに変換
                 let input_db = if input > 0.0 { util::gain_to_db(input) } else { util::MINUS_INFINITY_DB };
 
-                // Envelope follower in dB domain
+                // コンプレッサーの心臓(急に音量が上がったら、attack速度で追従、下がったら、Release速度で追従)
                 if input_db > self.envelope {
                     self.envelope = self.envelope * attack_coef_per_sample + input_db * (1.0 - attack_coef_per_sample);
                 } else {
                     self.envelope = self.envelope * release_coef_per_sample + input_db * (1.0 - release_coef_per_sample);
                 }
 
-                // Target gain reduction (dB)
+                // ratioの値を使って、ゲインリダクションを計算
                 let target_reduction_db = if self.envelope > threshold_db {
                     -((self.envelope - threshold_db) * (1.0 - 1.0 / ratio))
                 } else {
                     0.0_f32
                 };
 
-                // Smooth gain reduction in dB (attack -> faster when increasing reduction)
+                // target_reduction_dbに代入された値を見て、かかり具合を調整
                 if target_reduction_db < self.gain_reduction_db {
                     self.gain_reduction_db = self.gain_reduction_db * attack_coef_per_sample + target_reduction_db * (1.0 - attack_coef_per_sample);
                 } else {
                     self.gain_reduction_db = self.gain_reduction_db * release_coef_per_sample + target_reduction_db * (1.0 - release_coef_per_sample);
                 }
 
-                // Apply total gain (gain reduction + makeup) converted to linear
+                // db_to_gain(x) は 10^(x / 20)。減衰dB + メイクアップdB → 総ゲインに変換
+                // 最後の += sample.abs()で、出力音量を調整してる
                 let total_gain = util::db_to_gain(self.gain_reduction_db + makeup_db);
                 *sample *= total_gain;
 
                 amplitude += sample.abs();
             }
 
-            // Update peak meter (show linear amplitude)
+            // guiのピークメーターの更新
             if self.params.editor_state.is_open() {
                 amplitude = amplitude / num_samples;
                 let current_peak_meter = self.peak_meter.load(std::sync::atomic::Ordering::Relaxed);
