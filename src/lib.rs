@@ -5,7 +5,7 @@ use std::sync::Arc;
 
 mod editor;
 
-/// The time it takes for the peak meter to decay by 12 dB after switching to complete silence.
+/// ピークメーターが完全な無音になった後、12dB減衰するのにかかる時間
 const PEAK_METER_DECAY_MS: f64 = 150.0;
 
 // DSPエンジン用の構造体
@@ -186,6 +186,8 @@ impl Plugin for SimpleCompressor {
         let makeup_db = self.params.makeup.smoothed.next();
 
         // f32のサンプルレート
+        // 𝛼𝑎𝑡𝑡𝑎𝑐𝑘=𝑒−1/(𝜏𝑎𝑡𝑡𝑎𝑐𝑘⋅𝑓𝑠)
+        // αattack​=e−1/(τattack​⋅fs​)
         let sample_rate = context.transport().sample_rate as f32;
 
         for channel_samples in buffer.iter_samples() {
@@ -193,6 +195,8 @@ impl Plugin for SimpleCompressor {
             let num_samples = channel_samples.len() as f32;
 
             // スムージング係数の計算(歪まないようにアタックとリリースの計算をしているところ)
+            // 式は、1/(attack_time * sample_rate)
+            // 意味：1サンプル進むごとに過去の値をどれだけ残すか。αが 0 に近ければ「速く追従（新値を強く反映）」、1 に近ければ「遅く変化（滑らか）」。
             let attack_coef_per_sample = (-1.0_f32 / (attack_time * sample_rate)).exp();
             let release_coef_per_sample = (-1.0_f32 / (release_time * sample_rate)).exp();
 
@@ -219,6 +223,10 @@ impl Plugin for SimpleCompressor {
                 };
 
                 // target_reduction_dbに代入された値を見て、かかり具合を調整
+                //
+                // gain_reduction_db と target_reduction_db は通常 ≤ 0（「減衰」なので負かゼロ）。
+                // 例：gain_reduction_db = -2 dB、target_reduction_db = -5 dB → -5 < -2 は真 → より強い減衰（ターゲットがより負）なので アタック（速い）で追従。
+                // 逆にターゲットが小さく（減衰が減る＝値が 0 に近づく）ときは リリース（ゆっくり戻る）を使う。
                 if target_reduction_db < self.gain_reduction_db {
                     self.gain_reduction_db = self.gain_reduction_db * attack_coef_per_sample + target_reduction_db * (1.0 - attack_coef_per_sample);
                 } else {
@@ -227,6 +235,11 @@ impl Plugin for SimpleCompressor {
 
                 // db_to_gain(x) は 10^(x / 20)。減衰dB + メイクアップdB → 総ゲインに変換
                 // 最後の += sample.abs()で、出力音量を調整してる
+                //
+                // db_to_gain(d) は通常 gain=10のd/20乗（振幅ゲインに変換）。
+                // self.gain_reduction_db + makeup_db：減衰（負の dB）とメイクアップ（正の dB）を合算して 総 dB を作る。
+                // 例：gain_reduction_db = -5 dB, makeup_db = +3 dB → 合計 -2 dB → 線形ゲイン ≈ 10の-2/20乗 ≈ 0.794
+                // その線形ゲインをサンプルに掛けることで音量を調整（位相は保持）。
                 let total_gain = util::db_to_gain(self.gain_reduction_db + makeup_db);
                 *sample *= total_gain;
 
