@@ -1,11 +1,11 @@
 [package]
-name = "simple_compressor"
+name = "multiband_compressor"
 version = "0.1.0"
 edition = "2021"
 authors = ["kakeru3"]
 license = "GPL-3.0-or-later"
 homepage = "https://google.com"
-description = "simple compressor"
+description = "multiband compressor"
 
 [workspace]
 members = ["xtask"]
@@ -23,6 +23,7 @@ nih_plug_iced = { git = "https://github.com/robbert-vdh/nih-plug.git" }
 # nih_plug = { git = "https://github.com/robbert-vdh/nih-plug.git", default-features = false, features = ["assert_process_allocs"] }
 
 atomic_float = "1.1.0"
+biquad = "0.5.0"
 
 [profile.release]
 lto = "thin"

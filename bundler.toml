@@ -4,5 +4,5 @@
 # [package_name]
 # name = "Human Readable Plugin Name"  # defaults to <package_name>
 
-[simple_compressor]
-name = "simple_compressor"
+[multiband_compressor]
+name = "multiband_compressor"

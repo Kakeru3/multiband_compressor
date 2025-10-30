@@ -5,33 +5,54 @@ use nih_plug_iced::*;
 use std::sync::Arc;
 use std::time::Duration;
 
-use crate::SimpleCompressorParams;
+use crate::MultibandCompressorParams;
 
 // Makes sense to also define this here, makes it a bit easier to keep track of
 pub(crate) fn default_state() -> Arc<IcedState> {
-    IcedState::from_size(400, 500)
+    IcedState::from_size(680, 450)
 }
 
 pub(crate) fn create(
-    params: Arc<SimpleCompressorParams>,
+    params: Arc<MultibandCompressorParams>,
     peak_meter: Arc<AtomicF32>,
     editor_state: Arc<IcedState>,
 ) -> Option<Box<dyn Editor>> {
-    create_iced_editor::<SimpleCompressorEditor>(editor_state, (params, peak_meter))
+    create_iced_editor::<MultibandCompressorEditor>(editor_state, (params, peak_meter))
 }
 
-struct SimpleCompressorEditor {
-    params: Arc<SimpleCompressorParams>,
+struct MultibandCompressorEditor {
+    params: Arc<MultibandCompressorParams>,
     context: Arc<dyn GuiContext>,
 
     peak_meter: Arc<AtomicF32>,
 
-    threshold_slider_state: nih_widgets::param_slider::State,
-    ratio_slider_state: nih_widgets::param_slider::State,
-    attack_slider_state: nih_widgets::param_slider::State,
-    release_slider_state: nih_widgets::param_slider::State,
-    makeup_slider_state: nih_widgets::param_slider::State,
+    // Low band sliders
+    threshold_low_slider_state: nih_widgets::param_slider::State,
+    ratio_low_slider_state: nih_widgets::param_slider::State,
+    attack_low_slider_state: nih_widgets::param_slider::State,
+    release_low_slider_state: nih_widgets::param_slider::State,
+    makeup_low_slider_state: nih_widgets::param_slider::State,
+
+    // Mid band sliders
+    threshold_mid_slider_state: nih_widgets::param_slider::State,
+    ratio_mid_slider_state: nih_widgets::param_slider::State,
+    attack_mid_slider_state: nih_widgets::param_slider::State,
+    release_mid_slider_state: nih_widgets::param_slider::State,
+    makeup_mid_slider_state: nih_widgets::param_slider::State,
+
+    // High band sliders
+    threshold_high_slider_state: nih_widgets::param_slider::State,
+    ratio_high_slider_state: nih_widgets::param_slider::State,
+    attack_high_slider_state: nih_widgets::param_slider::State,
+    release_high_slider_state: nih_widgets::param_slider::State,
+    makeup_high_slider_state: nih_widgets::param_slider::State,
+
+    // Crossover sliders
+    xover_lo_mid_state: nih_widgets::param_slider::State,
+    xover_mid_hi_state: nih_widgets::param_slider::State,
+    
     peak_meter_state: nih_widgets::peak_meter::State,
+    scrollable_state: scrollable::State,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -40,27 +61,48 @@ enum Message {
     ParamUpdate(nih_widgets::ParamMessage),
 }
 
-impl IcedEditor for SimpleCompressorEditor {
+impl IcedEditor for MultibandCompressorEditor {
     type Executor = executor::Default;
     type Message = Message;
-    type InitializationFlags = (Arc<SimpleCompressorParams>, Arc<AtomicF32>);
+    type InitializationFlags = (Arc<MultibandCompressorParams>, Arc<AtomicF32>);
 
     fn new(
         (params, peak_meter): Self::InitializationFlags,
         context: Arc<dyn GuiContext>,
     ) -> (Self, Command<Self::Message>) {
-        let editor = SimpleCompressorEditor {
+        let editor = MultibandCompressorEditor {
             params,
             context,
 
             peak_meter,
 
-            threshold_slider_state: Default::default(),
-            ratio_slider_state: Default::default(),
-            attack_slider_state: Default::default(),
-            release_slider_state: Default::default(),
-            makeup_slider_state: Default::default(),
+            // Low band
+            threshold_low_slider_state: Default::default(),
+            ratio_low_slider_state: Default::default(),
+            attack_low_slider_state: Default::default(),
+            release_low_slider_state: Default::default(),
+            makeup_low_slider_state: Default::default(),
+
+            // Mid band
+            threshold_mid_slider_state: Default::default(),
+            ratio_mid_slider_state: Default::default(),
+            attack_mid_slider_state: Default::default(),
+            release_mid_slider_state: Default::default(),
+            makeup_mid_slider_state: Default::default(),
+
+            // High band
+            threshold_high_slider_state: Default::default(),
+            ratio_high_slider_state: Default::default(),
+            attack_high_slider_state: Default::default(),
+            release_high_slider_state: Default::default(),
+            makeup_high_slider_state: Default::default(),
+
+            // Crossovers
+            xover_lo_mid_state: Default::default(),
+            xover_mid_hi_state: Default::default(),
+
             peak_meter_state: Default::default(),
+            scrollable_state: Default::default(),
         };
 
         (editor, Command::none())
@@ -83,46 +125,133 @@ impl IcedEditor for SimpleCompressorEditor {
     }
 
     fn view(&mut self) -> Element<'_, Self::Message> {
-        Column::new()
-            .align_items(Alignment::Center)
-            .padding(20)
-            .spacing(10)
+        Scrollable::new(&mut self.scrollable_state)
             .push(
-                Text::new("Simple Compressor")
-                    .font(assets::NOTO_SANS_LIGHT)
-                    .size(24)
-                    .height(30.into())
-                    .width(Length::Fill)
-                    .horizontal_alignment(alignment::Horizontal::Center)
-                    .vertical_alignment(alignment::Vertical::Bottom),
-            )
-            .push(
-                nih_widgets::ParamSlider::new(&mut self.threshold_slider_state, &self.params.threshold)
-                    .map(Message::ParamUpdate),
-            )
-            .push(
-                nih_widgets::ParamSlider::new(&mut self.ratio_slider_state, &self.params.ratio)
-                    .map(Message::ParamUpdate),
-            )
-            .push(
-                nih_widgets::ParamSlider::new(&mut self.attack_slider_state, &self.params.attack)
-                    .map(Message::ParamUpdate),
-            )
-            .push(
-                nih_widgets::ParamSlider::new(&mut self.release_slider_state, &self.params.release)
-                    .map(Message::ParamUpdate),
-            )
-            .push(
-                nih_widgets::ParamSlider::new(&mut self.makeup_slider_state, &self.params.makeup)
-                    .map(Message::ParamUpdate),
-            )
-            .push(Space::with_height(20.into()))
-            .push(
-                nih_widgets::PeakMeter::new(
-                    &mut self.peak_meter_state,
-                    util::gain_to_db(self.peak_meter.load(std::sync::atomic::Ordering::Relaxed)),
-                )
-                .hold_time(Duration::from_millis(600)),
+                Column::new()
+                    .align_items(Alignment::Center)
+                    .padding(20)
+                    .spacing(10)
+                    .push(
+                        Text::new("Multiband Compressor")
+                            .font(assets::NOTO_SANS_LIGHT)
+                            .size(24)
+                            .height(30.into())
+                            .width(Length::Fill)
+                            .horizontal_alignment(alignment::Horizontal::Center)
+                            .vertical_alignment(alignment::Vertical::Bottom),
+                    )
+                    .push(Space::with_height(10.into()))
+                    // Low Band Section
+                    .push(
+                        Text::new("Low Band")
+                            .font(assets::NOTO_SANS_LIGHT)
+                            .size(18)
+                            .width(Length::Fill)
+                            .horizontal_alignment(alignment::Horizontal::Center),
+                    )
+                    .push(
+                        nih_widgets::ParamSlider::new(&mut self.threshold_low_slider_state, &self.params.threshold_low)
+                            .map(Message::ParamUpdate),
+                    )
+                    .push(
+                        nih_widgets::ParamSlider::new(&mut self.ratio_low_slider_state, &self.params.ratio_low)
+                            .map(Message::ParamUpdate),
+                    )
+                    .push(
+                        nih_widgets::ParamSlider::new(&mut self.attack_low_slider_state, &self.params.attack_low)
+                            .map(Message::ParamUpdate),
+                    )
+                    .push(
+                        nih_widgets::ParamSlider::new(&mut self.release_low_slider_state, &self.params.release_low)
+                            .map(Message::ParamUpdate),
+                    )
+                    .push(
+                        nih_widgets::ParamSlider::new(&mut self.makeup_low_slider_state, &self.params.makeup_low)
+                            .map(Message::ParamUpdate),
+                    )
+                    .push(Space::with_height(10.into()))
+                    // Mid Band Section
+                    .push(
+                        Text::new("Mid Band")
+                            .font(assets::NOTO_SANS_LIGHT)
+                            .size(18)
+                            .width(Length::Fill)
+                            .horizontal_alignment(alignment::Horizontal::Center),
+                    )
+                    .push(
+                        nih_widgets::ParamSlider::new(&mut self.threshold_mid_slider_state, &self.params.threshold_mid)
+                            .map(Message::ParamUpdate),
+                    )
+                    .push(
+                        nih_widgets::ParamSlider::new(&mut self.ratio_mid_slider_state, &self.params.ratio_mid)
+                            .map(Message::ParamUpdate),
+                    )
+                    .push(
+                        nih_widgets::ParamSlider::new(&mut self.attack_mid_slider_state, &self.params.attack_mid)
+                            .map(Message::ParamUpdate),
+                    )
+                    .push(
+                        nih_widgets::ParamSlider::new(&mut self.release_mid_slider_state, &self.params.release_mid)
+                            .map(Message::ParamUpdate),
+                    )
+                    .push(
+                        nih_widgets::ParamSlider::new(&mut self.makeup_mid_slider_state, &self.params.makeup_mid)
+                            .map(Message::ParamUpdate),
+                    )
+                    .push(Space::with_height(10.into()))
+                    // High Band Section
+                    .push(
+                        Text::new("High Band")
+                            .font(assets::NOTO_SANS_LIGHT)
+                            .size(18)
+                            .width(Length::Fill)
+                            .horizontal_alignment(alignment::Horizontal::Center),
+                    )
+                    .push(
+                        nih_widgets::ParamSlider::new(&mut self.threshold_high_slider_state, &self.params.threshold_high)
+                            .map(Message::ParamUpdate),
+                    )
+                    .push(
+                        nih_widgets::ParamSlider::new(&mut self.ratio_high_slider_state, &self.params.ratio_high)
+                            .map(Message::ParamUpdate),
+                    )
+                    .push(
+                        nih_widgets::ParamSlider::new(&mut self.attack_high_slider_state, &self.params.attack_high)
+                            .map(Message::ParamUpdate),
+                    )
+                    .push(
+                        nih_widgets::ParamSlider::new(&mut self.release_high_slider_state, &self.params.release_high)
+                            .map(Message::ParamUpdate),
+                    )
+                    .push(
+                        nih_widgets::ParamSlider::new(&mut self.makeup_high_slider_state, &self.params.makeup_high)
+                            .map(Message::ParamUpdate),
+                    )
+                    .push(Space::with_height(10.into()))
+                    // Crossover Section
+                    .push(
+                        Text::new("Crossovers")
+                            .font(assets::NOTO_SANS_LIGHT)
+                            .size(18)
+                            .width(Length::Fill)
+                            .horizontal_alignment(alignment::Horizontal::Center),
+                    )
+                    .push(
+                        nih_widgets::ParamSlider::new(&mut self.xover_lo_mid_state, &self.params.xover_lo_mid)
+                            .map(Message::ParamUpdate),
+                    )
+                    .push(
+                        nih_widgets::ParamSlider::new(&mut self.xover_mid_hi_state, &self.params.xover_mid_hi)
+                            .map(Message::ParamUpdate),
+                    )
+                    .push(Space::with_height(20.into()))
+                    .push(
+                        nih_widgets::PeakMeter::new(
+                            &mut self.peak_meter_state,
+                            util::gain_to_db(self.peak_meter.load(std::sync::atomic::Ordering::Relaxed)),
+                        )
+                        .hold_time(Duration::from_millis(600)),
+                    )
             )
             .into()
     }

@@ -1,4 +1,4 @@
-# Simple Compressor
+# Multiband Compressor
 
 ## Building
 
@@ -6,7 +6,7 @@
 
 ・mac&windowsで、じぶんのOSで使えるvstを生成する方法
 > ```shell
-> cargo xtask bundle simple_compressor --release
+> cargo xtask bundle multiband_compressor --release
 > ```
 
 ・macでのwindows用.vs3コンパイル<br>
@@ -34,7 +34,7 @@
 > ```
 > に変更し、
 > ```shell
-> cargo xtask bundle simple_compressor --release --target x86_64-pc-windows-gnu
+> cargo xtask bundle multiband_compressor --release --target x86_64-pc-windows-gnu
 > ```
-> で、target/x86_64-pc-windows-gnu/bundled/simple_compressor.vst3/Contents/x86_64-win/
+> で、target/x86_64-pc-windows-gnu/bundled/multiband_compressor.vst3/Contents/x86_64-win/
 > に生成されます
