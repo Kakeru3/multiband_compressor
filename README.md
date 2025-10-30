@@ -6,12 +6,12 @@ After installing [Rust](https://rustup.rs/), you can compile Simple Compressor a
 
 .vst3ファイルの作り方
 
-・mac&windowsで、じぶんのOSで使えるvstを生成する方法. 
+・mac&windowsで、じぶんのOSで使えるvstを生成する方法
 ```shell
 cargo xtask bundle simple_compressor --release
 ```
 
-・macでのwindows用.vs3コンパイル. 
+・macでのwindows用.vs3コンパイル<br>
 xtask/src/main.rsを、
 ```
 use std::env;
