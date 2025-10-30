@@ -2,8 +2,6 @@
 
 ## Building
 
-After installing [Rust](https://rustup.rs/), you can compile Simple Compressor as follows:
-
 .vst3ファイルの作り方
 
 ・mac&windowsで、じぶんのOSで使えるvstを生成する方法
