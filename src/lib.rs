@@ -3,8 +3,8 @@ use nih_plug::prelude::*;
 use nih_plug_iced::IcedState;
 use std::sync::Arc;
 
-mod editor;
 mod biquad;
+mod editor;
 use crate::biquad::Biquad;
 
 /// ピークメーターが完全な無音になった後、12dB減衰するのにかかる時間
@@ -329,7 +329,10 @@ impl Default for MultibandCompressorParams {
             xover_lo_mid: FloatParam::new(
                 "Crossover Low-Mid",
                 200.0,
-                FloatRange::Linear { min: 40.0, max: 1000.0 },
+                FloatRange::Linear {
+                    min: 40.0,
+                    max: 1000.0,
+                },
             )
             .with_unit(" Hz")
             .with_value_to_string(formatters::v2s_f32_rounded(1)),
@@ -337,7 +340,10 @@ impl Default for MultibandCompressorParams {
             xover_mid_hi: FloatParam::new(
                 "Crossover Mid-High",
                 2000.0,
-                FloatRange::Linear { min: 500.0, max: 8000.0 },
+                FloatRange::Linear {
+                    min: 500.0,
+                    max: 8000.0,
+                },
             )
             .with_unit(" Hz")
             .with_value_to_string(formatters::v2s_f32_rounded(1)),
@@ -369,7 +375,11 @@ impl BandCompressor {
         makeup_db: f32,
     ) -> f32 {
         let input_abs = input.abs();
-        let input_db = if input_abs > 0.0 { util::gain_to_db(input_abs) } else { util::MINUS_INFINITY_DB };
+        let input_db = if input_abs > 0.0 {
+            util::gain_to_db(input_abs)
+        } else {
+            util::MINUS_INFINITY_DB
+        };
 
         if input_db > self.envelope {
             self.envelope = self.envelope * attack_coef + input_db * (1.0 - attack_coef);
@@ -384,9 +394,11 @@ impl BandCompressor {
         };
 
         if target_reduction_db < self.gain_reduction_db {
-            self.gain_reduction_db = self.gain_reduction_db * attack_coef + target_reduction_db * (1.0 - attack_coef);
+            self.gain_reduction_db =
+                self.gain_reduction_db * attack_coef + target_reduction_db * (1.0 - attack_coef);
         } else {
-            self.gain_reduction_db = self.gain_reduction_db * release_coef + target_reduction_db * (1.0 - release_coef);
+            self.gain_reduction_db =
+                self.gain_reduction_db * release_coef + target_reduction_db * (1.0 - release_coef);
         }
 
         let total_gain = util::db_to_gain(self.gain_reduction_db + makeup_db);
@@ -451,7 +463,11 @@ impl Plugin for MultibandCompressor {
         self.compressors.clear();
         for _ in 0..ch {
             self.filters.push(ChannelFilters::new());
-            self.compressors.push([BandCompressor::new(), BandCompressor::new(), BandCompressor::new()]);
+            self.compressors.push([
+                BandCompressor::new(),
+                BandCompressor::new(),
+                BandCompressor::new(),
+            ]);
         }
 
         // 初期クロスオーバー設定（後述の inherent impl にて実装）
@@ -511,7 +527,9 @@ impl Plugin for MultibandCompressor {
         for mut channel_samples in buffer.iter_samples() {
             let channel_count = channel_samples.len();
             for ch_idx in 0..channel_count {
-                let sample = channel_samples.get_mut(ch_idx).expect("channel index out of range");
+                let sample = channel_samples
+                    .get_mut(ch_idx)
+                    .expect("channel index out of range");
                 let input = *sample;
 
                 // 1) バンド分割
@@ -540,35 +558,36 @@ impl Plugin for MultibandCompressor {
                 };
 
                 // 2) 各バンドへのコンプレッサー適用
-                let (low_out, mid_out, high_out) = if let Some(bands) = self.compressors.get_mut(ch_idx) {
-                    let low_out = bands[0].process_sample(
-                        low,
-                        threshold_low,
-                        ratio_low,
-                        attack_coef_low,
-                        release_coef_low,
-                        makeup_low,
-                    );
-                    let mid_out = bands[1].process_sample(
-                        mid,
-                        threshold_mid,
-                        ratio_mid,
-                        attack_coef_mid,
-                        release_coef_mid,
-                        makeup_mid,
-                    );
-                    let high_out = bands[2].process_sample(
-                        high,
-                        threshold_high,
-                        ratio_high,
-                        attack_coef_high,
-                        release_coef_high,
-                        makeup_high,
-                    );
-                    (low_out, mid_out, high_out)
-                } else {
-                    (low, mid, high)
-                };
+                let (low_out, mid_out, high_out) =
+                    if let Some(bands) = self.compressors.get_mut(ch_idx) {
+                        let low_out = bands[0].process_sample(
+                            low,
+                            threshold_low,
+                            ratio_low,
+                            attack_coef_low,
+                            release_coef_low,
+                            makeup_low,
+                        );
+                        let mid_out = bands[1].process_sample(
+                            mid,
+                            threshold_mid,
+                            ratio_mid,
+                            attack_coef_mid,
+                            release_coef_mid,
+                            makeup_mid,
+                        );
+                        let high_out = bands[2].process_sample(
+                            high,
+                            threshold_high,
+                            ratio_high,
+                            attack_coef_high,
+                            release_coef_high,
+                            makeup_high,
+                        );
+                        (low_out, mid_out, high_out)
+                    } else {
+                        (low, mid, high)
+                    };
 
                 let out = low_out + mid_out + high_out;
                 *sample = out;

@@ -9,7 +9,7 @@ use crate::MultibandCompressorParams;
 
 // Makes sense to also define this here, makes it a bit easier to keep track of
 pub(crate) fn default_state() -> Arc<IcedState> {
-    IcedState::from_size(680, 450)
+    IcedState::from_size(680, 500)
 }
 
 pub(crate) fn create(
@@ -50,7 +50,7 @@ struct MultibandCompressorEditor {
     // Crossover sliders
     xover_lo_mid_state: nih_widgets::param_slider::State,
     xover_mid_hi_state: nih_widgets::param_slider::State,
-    
+
     peak_meter_state: nih_widgets::peak_meter::State,
     scrollable_state: scrollable::State,
 }
@@ -141,117 +141,212 @@ impl IcedEditor for MultibandCompressorEditor {
                             .vertical_alignment(alignment::Vertical::Bottom),
                     )
                     .push(Space::with_height(10.into()))
-                    // Low Band Section
                     .push(
-                        Text::new("Low Band")
-                            .font(assets::NOTO_SANS_LIGHT)
-                            .size(18)
+                        Row::new()
+                            .spacing(20)
                             .width(Length::Fill)
-                            .horizontal_alignment(alignment::Horizontal::Center),
-                    )
-                    .push(
-                        nih_widgets::ParamSlider::new(&mut self.threshold_low_slider_state, &self.params.threshold_low)
-                            .map(Message::ParamUpdate),
-                    )
-                    .push(
-                        nih_widgets::ParamSlider::new(&mut self.ratio_low_slider_state, &self.params.ratio_low)
-                            .map(Message::ParamUpdate),
-                    )
-                    .push(
-                        nih_widgets::ParamSlider::new(&mut self.attack_low_slider_state, &self.params.attack_low)
-                            .map(Message::ParamUpdate),
-                    )
-                    .push(
-                        nih_widgets::ParamSlider::new(&mut self.release_low_slider_state, &self.params.release_low)
-                            .map(Message::ParamUpdate),
-                    )
-                    .push(
-                        nih_widgets::ParamSlider::new(&mut self.makeup_low_slider_state, &self.params.makeup_low)
-                            .map(Message::ParamUpdate),
+                            .push(
+                                Column::new()
+                                    .align_items(Alignment::Center)
+                                    .spacing(10)
+                                    .width(Length::Fill)
+                                    .push(
+                                        Text::new("Low Band")
+                                            .font(assets::NOTO_SANS_LIGHT)
+                                            .size(18)
+                                            .width(Length::Fill)
+                                            .horizontal_alignment(alignment::Horizontal::Center),
+                                    )
+                                    .push(
+                                        nih_widgets::ParamSlider::new(
+                                            &mut self.threshold_low_slider_state,
+                                            &self.params.threshold_low,
+                                        )
+                                        .map(Message::ParamUpdate),
+                                    )
+                                    .push(
+                                        nih_widgets::ParamSlider::new(
+                                            &mut self.ratio_low_slider_state,
+                                            &self.params.ratio_low,
+                                        )
+                                        .map(Message::ParamUpdate),
+                                    )
+                                    .push(
+                                        nih_widgets::ParamSlider::new(
+                                            &mut self.attack_low_slider_state,
+                                            &self.params.attack_low,
+                                        )
+                                        .map(Message::ParamUpdate),
+                                    )
+                                    .push(
+                                        nih_widgets::ParamSlider::new(
+                                            &mut self.release_low_slider_state,
+                                            &self.params.release_low,
+                                        )
+                                        .map(Message::ParamUpdate),
+                                    )
+                                    .push(
+                                        nih_widgets::ParamSlider::new(
+                                            &mut self.makeup_low_slider_state,
+                                            &self.params.makeup_low,
+                                        )
+                                        .map(Message::ParamUpdate),
+                                    ),
+                            )
+                            .push(
+                                Column::new()
+                                    .align_items(Alignment::Center)
+                                    .spacing(10)
+                                    .width(Length::Fill)
+                                    .push(
+                                        Text::new("Mid Band")
+                                            .font(assets::NOTO_SANS_LIGHT)
+                                            .size(18)
+                                            .width(Length::Fill)
+                                            .horizontal_alignment(alignment::Horizontal::Center),
+                                    )
+                                    .push(
+                                        nih_widgets::ParamSlider::new(
+                                            &mut self.threshold_mid_slider_state,
+                                            &self.params.threshold_mid,
+                                        )
+                                        .map(Message::ParamUpdate),
+                                    )
+                                    .push(
+                                        nih_widgets::ParamSlider::new(
+                                            &mut self.ratio_mid_slider_state,
+                                            &self.params.ratio_mid,
+                                        )
+                                        .map(Message::ParamUpdate),
+                                    )
+                                    .push(
+                                        nih_widgets::ParamSlider::new(
+                                            &mut self.attack_mid_slider_state,
+                                            &self.params.attack_mid,
+                                        )
+                                        .map(Message::ParamUpdate),
+                                    )
+                                    .push(
+                                        nih_widgets::ParamSlider::new(
+                                            &mut self.release_mid_slider_state,
+                                            &self.params.release_mid,
+                                        )
+                                        .map(Message::ParamUpdate),
+                                    )
+                                    .push(
+                                        nih_widgets::ParamSlider::new(
+                                            &mut self.makeup_mid_slider_state,
+                                            &self.params.makeup_mid,
+                                        )
+                                        .map(Message::ParamUpdate),
+                                    ),
+                            )
+                            .push(
+                                Column::new()
+                                    .align_items(Alignment::Center)
+                                    .spacing(10)
+                                    .width(Length::Fill)
+                                    .push(
+                                        Text::new("High Band")
+                                            .font(assets::NOTO_SANS_LIGHT)
+                                            .size(18)
+                                            .width(Length::Fill)
+                                            .horizontal_alignment(alignment::Horizontal::Center),
+                                    )
+                                    .push(
+                                        nih_widgets::ParamSlider::new(
+                                            &mut self.threshold_high_slider_state,
+                                            &self.params.threshold_high,
+                                        )
+                                        .map(Message::ParamUpdate),
+                                    )
+                                    .push(
+                                        nih_widgets::ParamSlider::new(
+                                            &mut self.ratio_high_slider_state,
+                                            &self.params.ratio_high,
+                                        )
+                                        .map(Message::ParamUpdate),
+                                    )
+                                    .push(
+                                        nih_widgets::ParamSlider::new(
+                                            &mut self.attack_high_slider_state,
+                                            &self.params.attack_high,
+                                        )
+                                        .map(Message::ParamUpdate),
+                                    )
+                                    .push(
+                                        nih_widgets::ParamSlider::new(
+                                            &mut self.release_high_slider_state,
+                                            &self.params.release_high,
+                                        )
+                                        .map(Message::ParamUpdate),
+                                    )
+                                    .push(
+                                        nih_widgets::ParamSlider::new(
+                                            &mut self.makeup_high_slider_state,
+                                            &self.params.makeup_high,
+                                        )
+                                        .map(Message::ParamUpdate),
+                                    ),
+                            ),
                     )
                     .push(Space::with_height(10.into()))
-                    // Mid Band Section
                     .push(
-                        Text::new("Mid Band")
-                            .font(assets::NOTO_SANS_LIGHT)
-                            .size(18)
+                        Row::new()
+                            .spacing(20)
                             .width(Length::Fill)
-                            .horizontal_alignment(alignment::Horizontal::Center),
+                            .align_items(Alignment::Start)
+                            .push(
+                                Column::new()
+                                    .align_items(Alignment::Center)
+                                    .spacing(10)
+                                    .width(Length::Fill)
+                                    .push(
+                                        Text::new("Crossovers")
+                                            .font(assets::NOTO_SANS_LIGHT)
+                                            .size(18)
+                                            .width(Length::Fill)
+                                            .horizontal_alignment(alignment::Horizontal::Center),
+                                    )
+                                    .push(
+                                        nih_widgets::ParamSlider::new(
+                                            &mut self.xover_lo_mid_state,
+                                            &self.params.xover_lo_mid,
+                                        )
+                                        .map(Message::ParamUpdate),
+                                    )
+                                    .push(
+                                        nih_widgets::ParamSlider::new(
+                                            &mut self.xover_mid_hi_state,
+                                            &self.params.xover_mid_hi,
+                                        )
+                                        .map(Message::ParamUpdate),
+                                    ),
+                            )
+                            .push(
+                                Column::new()
+                                    .align_items(Alignment::Center)
+                                    .spacing(10)
+                                    .width(Length::Shrink)
+                                    .push(
+                                        Text::new("Peak Meter")
+                                            .font(assets::NOTO_SANS_LIGHT)
+                                            .size(18)
+                                            .horizontal_alignment(alignment::Horizontal::Center),
+                                    )
+                                    .push(
+                                        nih_widgets::PeakMeter::new(
+                                            &mut self.peak_meter_state,
+                                            util::gain_to_db(
+                                                self.peak_meter
+                                                    .load(std::sync::atomic::Ordering::Relaxed),
+                                            ),
+                                        )
+                                        .hold_time(Duration::from_millis(600)),
+                                    ),
+                            ),
                     )
-                    .push(
-                        nih_widgets::ParamSlider::new(&mut self.threshold_mid_slider_state, &self.params.threshold_mid)
-                            .map(Message::ParamUpdate),
-                    )
-                    .push(
-                        nih_widgets::ParamSlider::new(&mut self.ratio_mid_slider_state, &self.params.ratio_mid)
-                            .map(Message::ParamUpdate),
-                    )
-                    .push(
-                        nih_widgets::ParamSlider::new(&mut self.attack_mid_slider_state, &self.params.attack_mid)
-                            .map(Message::ParamUpdate),
-                    )
-                    .push(
-                        nih_widgets::ParamSlider::new(&mut self.release_mid_slider_state, &self.params.release_mid)
-                            .map(Message::ParamUpdate),
-                    )
-                    .push(
-                        nih_widgets::ParamSlider::new(&mut self.makeup_mid_slider_state, &self.params.makeup_mid)
-                            .map(Message::ParamUpdate),
-                    )
-                    .push(Space::with_height(10.into()))
-                    // High Band Section
-                    .push(
-                        Text::new("High Band")
-                            .font(assets::NOTO_SANS_LIGHT)
-                            .size(18)
-                            .width(Length::Fill)
-                            .horizontal_alignment(alignment::Horizontal::Center),
-                    )
-                    .push(
-                        nih_widgets::ParamSlider::new(&mut self.threshold_high_slider_state, &self.params.threshold_high)
-                            .map(Message::ParamUpdate),
-                    )
-                    .push(
-                        nih_widgets::ParamSlider::new(&mut self.ratio_high_slider_state, &self.params.ratio_high)
-                            .map(Message::ParamUpdate),
-                    )
-                    .push(
-                        nih_widgets::ParamSlider::new(&mut self.attack_high_slider_state, &self.params.attack_high)
-                            .map(Message::ParamUpdate),
-                    )
-                    .push(
-                        nih_widgets::ParamSlider::new(&mut self.release_high_slider_state, &self.params.release_high)
-                            .map(Message::ParamUpdate),
-                    )
-                    .push(
-                        nih_widgets::ParamSlider::new(&mut self.makeup_high_slider_state, &self.params.makeup_high)
-                            .map(Message::ParamUpdate),
-                    )
-                    .push(Space::with_height(10.into()))
-                    // Crossover Section
-                    .push(
-                        Text::new("Crossovers")
-                            .font(assets::NOTO_SANS_LIGHT)
-                            .size(18)
-                            .width(Length::Fill)
-                            .horizontal_alignment(alignment::Horizontal::Center),
-                    )
-                    .push(
-                        nih_widgets::ParamSlider::new(&mut self.xover_lo_mid_state, &self.params.xover_lo_mid)
-                            .map(Message::ParamUpdate),
-                    )
-                    .push(
-                        nih_widgets::ParamSlider::new(&mut self.xover_mid_hi_state, &self.params.xover_mid_hi)
-                            .map(Message::ParamUpdate),
-                    )
-                    .push(Space::with_height(20.into()))
-                    .push(
-                        nih_widgets::PeakMeter::new(
-                            &mut self.peak_meter_state,
-                            util::gain_to_db(self.peak_meter.load(std::sync::atomic::Ordering::Relaxed)),
-                        )
-                        .hold_time(Duration::from_millis(600)),
-                    )
+                    .push(Space::with_height(20.into())),
             )
             .into()
     }

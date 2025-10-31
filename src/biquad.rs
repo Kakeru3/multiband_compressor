@@ -11,7 +11,15 @@ pub struct Biquad {
 
 impl Biquad {
     pub fn new() -> Self {
-        Self { b0: 1.0, b1: 0.0, b2: 0.0, a1: 0.0, a2: 0.0, z1: 0.0, z2: 0.0 }
+        Self {
+            b0: 1.0,
+            b1: 0.0,
+            b2: 0.0,
+            a1: 0.0,
+            a2: 0.0,
+            z1: 0.0,
+            z2: 0.0,
+        }
     }
 
     pub fn process_sample(&mut self, x: f32) -> f32 {
