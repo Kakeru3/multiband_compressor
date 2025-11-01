@@ -5,12 +5,7 @@ use nih_plug_iced::*;
 use std::sync::Arc;
 use std::time::Duration;
 
-use crate::MultibandCompressorParams;
-
-// Makes sense to also define this here, makes it a bit easier to keep track of
-pub(crate) fn default_state() -> Arc<IcedState> {
-    IcedState::from_size(680, 500)
-}
+use crate::params::MultibandCompressorParams;
 
 pub(crate) fn create(
     params: Arc<MultibandCompressorParams>,
